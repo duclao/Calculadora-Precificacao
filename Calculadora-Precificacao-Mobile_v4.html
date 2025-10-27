@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Calculadora de Markup — Mobile (v4)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root{
+    --bg1:#111827; --bg2:#0b1220; --card:#0f172a; --border:#1f2937;
+    --text:#e5e7eb; --muted:#a1a1aa;
+    --brand1:#6366f1; --brand2:#8b5cf6; --success:#22c55e;
+    --radius:14px; --shadow:0 10px 24px rgba(0,0,0,.35);
+  }
+  html,body{ margin:0; background:linear-gradient(160deg,#1e293b,#0f172a); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial; }
+  .container{ max-width:760px; margin:0 auto; padding:10px 12px 24px; }
+  .hero{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius:16px; box-shadow:var(--shadow); padding:14px 14px 12px; text-align:center; }
+  .hero .title{ font-size:12px; opacity:.9; margin-bottom:2px; }
+  .hero .price{ font-size:28px; font-weight:900; margin:0; line-height:1; }
+  .hero .sub{ font-size:11px; opacity:.85; margin-top:4px; }
+  .hero .alt{ margin-top:6px; font-size:14px; font-weight:700; }
+  .hero .alt small{ font-weight:600; opacity:.9; }
+  .panel{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-top:10px; }
+  .panel-h{ padding:10px 12px; font-weight:800; font-size:17px; background:#0b1628; border-bottom:1px solid var(--border); }
+  .panel-b{ padding:10px 12px; }
+  .legend{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+  label{ font-size:13px; display:block; margin:10px 0 6px; }
+  input[type="text"]{
+    width:100%; max-width:100%; padding:12px 14px; font-size:16px;
+    border-radius:12px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; outline:none;
+    -webkit-appearance: none; appearance:none;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:520px){ .grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:400px){ .grid{ grid-template-columns:1fr; } }
+  .row-actions{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  button{ padding:12px 16px; border-radius:12px; border:none; color:white; font-weight:800; cursor:pointer; }
+  .btn-primary{ background:linear-gradient(135deg,var(--brand1),var(--brand2)); flex:1; min-width:140px; }
+  .btn-secondary{ background:#0b1220; color:#e5e7eb; border:1px solid #334155; }
+  .switch{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted); margin-top:2px; }
+  .switch input{ width:18px; height:18px; }
+  details{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-top:10px; }
+  details > summary{ list-style:none; cursor:pointer; padding:10px 12px; font-weight:800; }
+  details > summary::-webkit-details-marker{ display:none; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; }
+  footer{ text-align:center; font-size:12px; color:#94a3b8; margin:18px 0 8px; line-height:1.5; padding:0 8px; }
+  /* debug (oculto) */
+  #dbg{display:none; font:12px/1.4 ui-monospace,monospace; background:#0b1220; border:1px dashed #334155; padding:6px; margin-top:10px; border-radius:8px; white-space:pre-wrap}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="title">Preço Sugerido</div>
+      <div id="p-sug" class="price">R$ 0,00</div>
+      <div id="p-desc-wrap" class="alt" style="display:none;"><small>Preço c/ desconto:</small> <span id="p-desc">R$ 0,00</span></div>
+      <div class="sub">Baseado nos parâmetros abaixo</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h">Cálculo do Markup</div>
+      <div class="panel-b">
+        <div class="legend">Percentuais são aplicados sobre o preço de venda.</div>
+        <div class="grid">
+          <div>
+            <label for="custo">Custo (R$)</label>
+            <input id="custo" type="text" inputmode="decimal" autocomplete="off" value="100"/>
+          </div>
+          <div>
+            <label for="despesas">Despesas (%)</label>
+            <input id="despesas" type="text" inputmode="decimal" autocomplete="off" value="12"/>
+          </div>
+          <div>
+            <label for="lucro">Lucro (%)</label>
+            <input id="lucro" type="text" inputmode="decimal" autocomplete="off" value="15"/>
+          </div>
+          <div>
+            <label for="aliquota">Impostos (%)</label>
+            <input id="aliquota" type="text" inputmode="decimal" autocomplete="off" value="7,89"/>
+          </div>
+          <div>
+            <label for="comissao">Comissão (%)</label>
+            <input id="comissao" type="text" inputmode="decimal" autocomplete="off" value="0"/>
+          </div>
+          <div>
+            <label for="desconto">Desconto (%)</label>
+            <input id="desconto" type="text" inputmode="decimal" autocomplete="off" value="3"/>
+          </div>
+        </div>
+
+        <div class="row-actions">
+          <div class="switch">
+            <input id="preservar" type="checkbox"/>
+            <label for="preservar">Preservar margem após desconto</label>
+          </div>
+          <button id="calc" type="button" class="btn-primary">Calcular</button>
+          <button id="clear" type="button" class="btn-secondary">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>Impacto do Desconto</summary>
+      <div class="panel-b">
+        <div>Multiplicador: <strong class="mono" id="mult">1,00</strong></div>
+        <div style="margin-top:8px;">
+          <div>Preço (sem desconto): <strong id="preco-sem" class="mono">R$ 0,00</strong></div>
+          <div>Preço (com desconto): <strong id="preco-com" class="mono">R$ 0,00</strong></div>
+          <div style="margin-top:6px;">Lucro (sobre venda): <span id="lucro-sv" class="mono">—</span></div>
+          <div>Lucro Real (residual): <span id="lucro-real" class="mono">—</span></div>
+        </div>
+      </div>
+    </details>
+
+    <div id="dbg"></div>
+
+    <footer>
+      <strong>Desenvolvida por Eduardo Pires</strong> — Analista de Dados<br/>
+      Todos os direitos reservados à <strong>E-Tech Sistemas</strong> · 📞 (75) 99955-3626<br/>
+      <span style="font-size:11px;">Cópia, reprodução ou redistribuição não autorizada é expressamente proibida.</span>
+    </footer>
+  </div>
+
+<script>
+// ==== util =====
+function $(id){ return document.getElementById(id); }
+function logDbg(msg){
+  var d=$('dbg'); if(!d) return;
+  if(location.hash==='#debug'){ d.style.display='block'; d.textContent+= msg+'\\n'; }
+}
+function fmt(v){
+  try{ return isFinite(v) ? v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : 'R$\\u00A00,00'; }
+  catch(e){ return 'R$ ' + (Math.round((+v||0)*100)/100).toFixed(2).replace('.',','); }
+}
+function toNum(s){
+  s = String(s==null? '': s);
+  // remove espaços e tudo que não for dígito, vírgula, ponto ou sinal (-)
+  s = s.replace(/\\s+/g,'').replace(/[^0-9,\\.\\-]/g,'');
+  // se houver mais de uma vírgula/ponto, mantém só o último como decimal
+  var parts = s.split(/[.,]/);
+  if(parts.length>1){
+    var dec = parts.pop(); // última parte = decimais
+    s = parts.join('') + '.' + dec; // junta inteiros e usa ponto como separador decimal
+  }else{
+    s = s.replace(',', '.'); // troca vírgula por ponto
+  }
+  var n = parseFloat(s);
+  return isNaN(n)? 0 : n;
+}
+
+// ==== cálculo =====
+function calcular(){
+  try{
+    var custo = toNum($('custo').value);
+    var despesas = toNum($('despesas').value);
+    var lucro = toNum($('lucro').value);
+    var impostos = toNum($('aliquota').value);
+    var comissao = toNum($('comissao').value);
+    var desconto = toNum($('desconto').value);
+    var preservar = $('preservar').checked;
+
+    var soma = despesas + lucro + impostos + comissao;
+    if(soma >= 100){
+      alert('A soma de despesas + impostos + lucro + comissão não pode ser ≥ 100%.');
+      return;
+    }
+
+    var mult = 100 / (100 - soma);
+    var precoSemDescBase = custo * mult;
+    var precoCalc, precoFinal;
+
+    if(preservar){
+      precoFinal = precoSemDescBase;
+      var fator = 1 - (desconto/100);
+      precoCalc = fator>0 ? (precoFinal / fator) : precoFinal;
+    }else{
+      precoCalc = precoSemDescBase;
+      precoFinal = precoCalc * (1 - desconto/100);
+    }
+
+    // componentes
+    function val(p,pc){ return p*(pc/100); }
+    var dCalc = val(precoCalc, despesas);
+    var iCalc = val(precoCalc, impostos);
+    var cCalc = val(precoCalc, comissao);
+    var lSobreCalc = val(precoCalc, lucro);
+    var lucroRealSem = precoCalc - custo - dCalc - iCalc - cCalc;
+
+    // atualiza UI
+    $('mult').textContent = mult.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    $('preco-sem').textContent = fmt(precoCalc);
+    $('preco-com').textContent = fmt(precoFinal);
+    $('p-sug').textContent = fmt(precoCalc);
+    var wrap = $('p-desc-wrap');
+    if((desconto||0)>0){ wrap.style.display='block'; $('p-desc').textContent = fmt(precoFinal); } else { wrap.style.display='none'; }
+
+    $('lucro-sv').textContent = fmt(lSobreCalc) + ' (sem desc.) / ' + fmt(precoFinal*(lucro/100)) + ' (com desc.)';
+    var dFinal = val(precoFinal, despesas);
+    var iFinal = val(precoFinal, impostos);
+    var cFinal = val(precoFinal, comissao);
+    var lucroRealCom = precoFinal - custo - dFinal - iFinal - cFinal;
+    $('lucro-real').textContent = fmt(lucroRealSem) + ' (sem) / ' + fmt(lucroRealCom) + ' (com)';
+  }catch(e){
+    logDbg('Erro calcular: '+ e.message);
+  }
+}
+
+// ==== init síncrono (evita corrida de eventos em mobile) =====
+function init(){
+  try{
+    $('calc').addEventListener('click', calcular);
+    $('clear').addEventListener('click', function(){
+      ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(function(id){ $(id).value=''; });
+      $('preservar').checked = false; calcular();
+    });
+    ['custo','despesas','lucro','aliquota','comissao','desconto','preservar'].forEach(function(id){
+      var el=$(id); var ev = id==='preservar' ? 'change' : 'input';
+      el.addEventListener(ev, calcular);
+    });
+    calcular();
+    logDbg('init ok');
+  }catch(e){
+    logDbg('Erro init: '+ e.message);
+  }
+}
+// roda imediatamente (script está ao final do body)
+init();
+
+// captura erros globais (aparece se acessar com #debug na URL)
+window.onerror = function(msg,src,ln,col,err){ logDbg('window.onerror: '+msg); };
+</script>
+</body>
+</html>

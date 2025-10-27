@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Calculadora de Markup — Mobile (v5.1)</title>
+<title>Preço Certo — Calculadora de Markup (v6d)</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   :root{
@@ -15,42 +15,42 @@
   html,body{ margin:0; background:linear-gradient(160deg,#1e293b,#0f172a); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial; }
   .container{ max-width:760px; margin:0 auto; padding:10px 12px 24px; }
 
-  /* HERO */
-  .hero{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius:16px; box-shadow:var(--shadow); padding:14px 14px 12px; text-align:center; }
+  /* Título */
+  .app-title{ text-align:center; font-size:28px; font-weight:900; text-transform:uppercase; letter-spacing:1px; color:#ffffff; margin:10px 0 6px; }
+  .app-sub{ text-align:center; font-size:13px; color:#94a3b8; margin:0 0 10px; }
+
+  /* Hero */
+  .hero{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius:16px; box-shadow:var(--shadow); padding:14px; text-align:center; }
   .hero .title{ font-size:12px; opacity:.9; margin-bottom:2px; }
   .hero .price{ font-size:28px; font-weight:900; margin:0; line-height:1; }
   .hero .sub{ font-size:11px; opacity:.85; margin-top:4px; }
   .hero .alt{ margin-top:6px; font-size:14px; font-weight:700; }
   .hero .alt small{ font-weight:600; opacity:.9; }
 
-  /* PANELS */
+  /* Painéis */
   .panel{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-top:10px; }
   .panel-h{ padding:10px 12px; font-weight:800; font-size:17px; background:#0b1628; border-bottom:1px solid var(--border); }
   .panel-b{ padding:10px 12px; }
   .legend{ font-size:12px; color:var(--muted); margin-bottom:6px; }
 
-  /* inputs */
+  /* Inputs */
   label{ font-size:13px; display:block; margin:10px 0 6px; }
   input[type="text"]{
-    width:100%; max-width:100%; padding:12px 14px; font-size:16px;
+    width:100%; padding:12px 14px; font-size:16px;
     border-radius:12px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; outline:none;
-    -webkit-appearance: none; appearance:none;
-    overflow: hidden; text-overflow: ellipsis;
   }
   .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   @media (max-width:520px){ .grid{ grid-template-columns:1fr 1fr; } }
   @media (max-width:400px){ .grid{ grid-template-columns:1fr; } }
+
   .row-actions{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
   button{ padding:12px 16px; border-radius:12px; border:none; color:white; font-weight:800; cursor:pointer; }
   .btn-primary{ background:linear-gradient(135deg,var(--brand1),var(--brand2)); flex:1; min-width:140px; }
   .btn-secondary{ background:#0b1220; color:#e5e7eb; border:1px solid #334155; }
   .switch{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted); margin-top:2px; }
-  .switch input{ width:18px; height:18px; }
 
-  /* IMPACTO DO DESCONTO (sempre visível) */
-  .impact .box{
-    border:1px solid #1f2a44; border-radius:16px; padding:12px; margin:10px 0; background:#0b1628;
-  }
+  /* Impacto */
+  .impact .box{ border:1px solid #1f2a44; border-radius:16px; padding:12px; margin:10px 0; background:#0b1628; }
   .impact .lbl{ font-weight:800; letter-spacing:.3px; font-size:12px; color:#cbd5e1; margin-bottom:6px; text-transform:uppercase; }
   .impact .valor{ font-size:34px; font-weight:900; margin:0; line-height:1; }
   .impact .valor.green{ color:var(--success); }
@@ -58,46 +58,48 @@
   .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; }
   .neg{ color:var(--danger); font-weight:700; }
 
+  /* KPIs finais */
+  .summary .kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:14px; }
+  .kpi{ background:#0b1628; border:1px solid #1f2a44; border-radius:14px; padding:12px; min-height:96px; }
+  .kpi .label{ font-size:13px; color:#cbd5e1; margin-bottom:6px; }
+  .kpi .value{ font-size:22px; font-weight:900; margin:0; line-height:1; }
+  .kpi .foot{ margin-top:6px; display:flex; align-items:center; gap:8px; }
+  .kpi .pct{ font-size:12px; color:#22c55e; font-weight:700; }
+  .kpi .ok{ width:16px; height:16px; flex:0 0 16px; display:inline-block; background:#22c55e; border-radius:50%; position:relative; }
+  .kpi .ok::after{ content:""; position:absolute; left:4px; top:2px; width:6px; height:10px; border-right:2px solid #0b1628; border-bottom:2px solid #0b1628; transform:rotate(45deg); }
+
   footer{ text-align:center; font-size:12px; color:#94a3b8; margin:18px 0 8px; line-height:1.5; padding:0 8px; }
 </style>
 
 <script>
 function $(id){ return document.getElementById(id); }
 function fmt(v){
-  try{ return isFinite(v) ? Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : 'R$\u00A00,00'; }
+  try{ return isFinite(v) ? Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : 'R$ 0,00'; }
   catch(e){ return 'R$ ' + (Math.round((+v||0)*100)/100).toFixed(2).replace('.',','); }
 }
 function toNum(s){
-  s = String(s==null? '': s);
-  s = s.replace(/\s+/g,'').replace(/[^0-9,\.\-]/g,'');
+  s = String(s==null? '': s).replace(/\s+/g,'').replace(/[^0-9,\.\-]/g,'');
   const parts = s.split(/[.,]/);
-  if(parts.length>1){
-    const dec = parts.pop();
-    s = parts.join('') + '.' + dec;
-  }else{
-    s = s.replace(',', '.');
-  }
+  if(parts.length>1){ const dec = parts.pop(); s = parts.join('') + '.' + dec; }
+  else{ s = s.replace(',', '.'); }
   const n = parseFloat(s);
   return isNaN(n)? 0 : n;
 }
 function val(p,pc){ return p*(pc/100); }
 
 function calcular(){
-  const custo = toNum($('custo').value);
-  const despesas = toNum($('despesas').value);
-  const lucro = toNum($('lucro').value);
-  const impostos = toNum($('aliquota').value);
-  const comissao = toNum($('comissao').value);
-  const desconto = toNum($('desconto').value);
+  const custo     = toNum($('custo').value);
+  const despesas  = toNum($('despesas').value);
+  const lucro     = toNum($('lucro').value);
+  const impostos  = toNum($('aliquota').value);
+  const comissao  = toNum($('comissao').value);
+  const desconto  = toNum($('desconto').value);
   const preservar = $('preservar').checked;
 
   const soma = despesas + lucro + impostos + comissao;
-  if(soma >= 100){
-    alert('A soma de despesas + impostos + lucro + comissão não pode ser ≥ 100%.');
-    return;
-  }
+  if(soma >= 100){ alert('A soma de despesas + impostos + lucro + comissão não pode ser ≥ 100%.'); return; }
 
-  const mult = 100 / (100 - soma);
+  const mult = 100 / (100 - soma || 1);
   const precoSemDescBase = custo * mult;
   let precoCalc, precoFinal;
 
@@ -110,54 +112,75 @@ function calcular(){
     precoFinal = precoCalc * (1 - desconto/100);
   }
 
-  // componentes
-  const dCalc = val(precoCalc, despesas);
-  const iCalc = val(precoCalc, impostos);
-  const cCalc = val(precoCalc, comissao);
-  const lucroSobreVendaSem = val(precoCalc, lucro);
+  // Componentes no preço calculado (sem desconto)
+  const dCalc      = val(precoCalc, despesas);
+  const iCalc      = val(precoCalc, impostos);
+  const cCalc      = val(precoCalc, comissao);
+  const lSobreCalc = val(precoCalc, lucro);
   const lucroRealSem = precoCalc - custo - dCalc - iCalc - cCalc;
 
-  // finais
+  // Finais com desconto
   const dFinal = val(precoFinal, despesas);
   const iFinal = val(precoFinal, impostos);
   const cFinal = val(precoFinal, comissao);
-  const lucroSobreVendaCom = val(precoFinal, lucro);
   const lucroRealCom = precoFinal - custo - dFinal - iFinal - cFinal;
   const reducao = Math.max(0, lucroRealSem - lucroRealCom);
 
-  // HERO
+  // Lucro com desconto exibido = lucro efetivo (igual ao residual com desconto)
+  const lucroEfetivoCom = lucroRealCom;
+
+  /* HERO */
   $('p-sug').textContent = fmt(precoCalc);
   const wrap = $('p-desc-wrap');
   if((desconto||0)>0){ wrap.style.display='block'; $('p-desc').textContent = fmt(precoFinal); } else { wrap.style.display='none'; }
 
-  // IMPACTO (cards)
-  $('preco-sem').textContent = fmt(precoCalc);
-  $('preco-com').textContent = fmt(precoFinal);
-
-  $('lucro-sv-sem').textContent = fmt(lucroSobreVendaSem);
-  $('lucro-sv-com').textContent = fmt(lucroSobreVendaCom);
-
+  /* IMPACTO */
+  $('preco-sem').textContent   = fmt(precoCalc);
+  $('preco-com').textContent   = fmt(precoFinal);
+  $('lucro-sv-sem').textContent= fmt(lSobreCalc);
+  $('lucro-sv-com').textContent= fmt(lucroEfetivoCom);
   $('lucro-real-sem').textContent = fmt(lucroRealSem);
   $('lucro-real-com').textContent = fmt(lucroRealCom);
+  $('lucro-reducao').textContent  = fmt(reducao);
 
-  const red = $('lucro-reducao');
-  red.textContent = fmt(reducao);
-  red.classList.toggle('neg', reducao>0);
+  /* KPIs finais */
+  const pc = precoCalc || 0.000001;
+  const pctCusto  = (custo/pc)*100;
+  const pctDesp   = (dCalc/pc)*100;
+  const pctImp    = (iCalc/pc)*100;
+  const pctLucro  = lucro;
+  const pctComiss = comissao;
+  const descVal   = pc * (desconto/100);
+  const pctDesc   = desconto;
+
+  $('sum-custo').textContent  = fmt(custo);
+  $('sum-desp').textContent   = fmt(dCalc);
+  $('sum-imp').textContent    = fmt(iCalc);
+  $('sum-lucro').textContent  = fmt(lSobreCalc);
+  $('sum-comiss').textContent = fmt(cCalc);
+  $('sum-desc').textContent   = fmt(descVal);
+
+  $('sum-custo-p').textContent  = pctCusto.toFixed(1)+'%';
+  $('sum-desp-p').textContent   = pctDesp.toFixed(1)+'%';
+  $('sum-imp-p').textContent    = pctImp.toFixed(1)+'%';
+  $('sum-lucro-p').textContent  = pctLucro.toFixed(1)+'%';
+  $('sum-comiss-p').textContent = pctComiss.toFixed(1)+'%';
+  $('sum-desc-p').textContent   = pctDesc.toFixed(1)+'%';
+
+  $('sum-panel').style.display = (precoCalc>0)?'block':'none';
 }
 
 function limpar(){
   ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>$(id).value='');
-  $('preservar').checked = false; calcular();
+  $('preservar').checked=false;
+  calcular();
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  // eventos
-  ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>{
-    $(id).addEventListener('input', calcular);
-  });
-  $('preservar').addEventListener('change', calcular);
-  $('calc').addEventListener('click', calcular);
-  $('clear').addEventListener('click', limpar);
+document.addEventListener('DOMContentLoaded',()=>{
+  ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>$(id).addEventListener('input',calcular));
+  $('preservar').addEventListener('change',calcular);
+  $('calc').addEventListener('click',calcular);
+  $('clear').addEventListener('click',limpar);
   calcular();
 });
 </script>
@@ -165,28 +188,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 <body>
   <div class="container">
-    <!-- HERO -->
-<h1 style="
-  text-align:center;
-  font-size:28px;
-  font-weight:900;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  color:#ffffff;
-  margin-top:10px;
-  margin-bottom:6px;
-">
-  Preço Certo
-</h1>
-<p style="
-  text-align:center;
-  font-size:13px;
-  color:#94a3b8;
-  margin-top:0;
-  margin-bottom:10px;
-">
-  Calculadora de Precificação Inteligente
-</p>
+    <!-- Título -->
+    <h1 class="app-title">Preço Certo</h1>
+    <p class="app-sub">Calculadora de Precificação Inteligente</p>
+
+    <!-- Hero -->
     <div class="hero">
       <div class="title">Preço Sugerido</div>
       <div id="p-sug" class="price">R$ 0,00</div>
@@ -194,36 +200,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
       <div class="sub">Baseado nos parâmetros abaixo</div>
     </div>
 
-    <!-- FORM -->
+    <!-- Form -->
     <div class="panel">
       <div class="panel-h">Cálculo do Markup</div>
       <div class="panel-b">
         <div class="legend">Percentuais são aplicados sobre o preço de venda.</div>
         <div class="grid">
-          <div>
-            <label for="custo">Custo (R$)</label>
-            <input id="custo" type="text" inputmode="decimal" autocomplete="off" value=""/>
-          </div>
-          <div>
-            <label for="despesas">Despesas (%)</label>
-            <input id="despesas" type="text" inputmode="decimal" autocomplete="off" value=""/>
-          </div>
-          <div>
-            <label for="lucro">Lucro (%)</label>
-            <input id="lucro" type="text" inputmode="decimal" autocomplete="off" value=""/>
-          </div>
-          <div>
-            <label for="aliquota">Impostos (%)</label>
-            <input id="aliquota" type="text" inputmode="decimal" autocomplete="off" value=""/>
-          </div>
-          <div>
-            <label for="comissao">Comissão (%)</label>
-            <input id="comissao" type="text" inputmode="decimal" autocomplete="off" value="0"/>
-          </div>
-          <div>
-            <label for="desconto">Desconto (%)</label>
-            <input id="desconto" type="text" inputmode="decimal" autocomplete="off" value=""/>
-          </div>
+          <div><label for="custo">Custo (R$)</label><input id="custo" type="text" inputmode="decimal" autocomplete="off"/></div>
+          <div><label for="despesas">Despesas (%)</label><input id="despesas" type="text" inputmode="decimal" autocomplete="off"/></div>
+          <div><label for="lucro">Lucro (%)</label><input id="lucro" type="text" inputmode="decimal" autocomplete="off"/></div>
+          <div><label for="aliquota">Impostos (%)</label><input id="aliquota" type="text" inputmode="decimal" autocomplete="off"/></div>
+          <div><label for="comissao">Comissão (%)</label><input id="comissao" type="text" inputmode="decimal" autocomplete="off"/></div>
+          <div><label for="desconto">Desconto (%)</label><input id="desconto" type="text" inputmode="decimal" autocomplete="off"/></div>
         </div>
 
         <div class="row-actions">
@@ -237,7 +225,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       </div>
     </div>
 
-    <!-- IMPACTO DO DESCONTO (sempre visível abaixo do bloco inicial) -->
+    <!-- Impacto do Desconto -->
     <div class="panel impact">
       <div class="panel-h">Impacto do Desconto</div>
       <div class="panel-b">
@@ -246,24 +234,36 @@ document.addEventListener('DOMContentLoaded', ()=>{
           <div class="valor mono" id="preco-sem">R$ 0,00</div>
           <div class="subtxt">Preço antes do desconto.</div>
         </div>
-
         <div class="box">
           <div class="lbl">PREÇO FINAL (com desconto)</div>
           <div class="valor mono green" id="preco-com">R$ 0,00</div>
           <div class="subtxt">Desconto aplicado ao preço calculado.</div>
         </div>
-
         <div class="box">
           <div class="lbl">Lucro (sobre venda)</div>
           <div class="subtxt">Sem desconto: <span class="mono" id="lucro-sv-sem">R$ 0,00</span></div>
           <div class="subtxt">Com desconto: <span class="mono" id="lucro-sv-com">R$ 0,00</span></div>
         </div>
-
         <div class="box">
           <div class="lbl">Lucro Real (residual)</div>
           <div class="subtxt">Sem desconto: <span class="mono" id="lucro-real-sem">R$ 0,00</span></div>
           <div class="subtxt">Com desconto: <span class="mono" id="lucro-real-com">R$ 0,00</span></div>
           <div class="subtxt">Redução do lucro: <span class="mono neg" id="lucro-reducao">R$ 0,00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs finais -->
+    <div class="panel summary" id="sum-panel" style="display:none;">
+      <div class="panel-h">Análise do Preço Sugerido</div>
+      <div class="panel-b">
+        <div class="kpis">
+          <div class="kpi"><div class="label">Custo do Produto</div><div class="value mono" id="sum-custo">R$ 0,00</div><div class="foot"><span class="pct" id="sum-custo-p">0%</span><span class="ok"></span></div></div>
+          <div class="kpi"><div class="label">Despesas</div><div class="value mono" id="sum-desp">R$ 0,00</div><div class="foot"><span class="pct" id="sum-desp-p">0%</span><span class="ok"></span></div></div>
+          <div class="kpi"><div class="label">Impostos</div><div class="value mono" id="sum-imp">R$ 0,00</div><div class="foot"><span class="pct" id="sum-imp-p">0%</span><span class="ok"></span></div></div>
+          <div class="kpi"><div class="label">Lucro Líquido</div><div class="value mono" id="sum-lucro">R$ 0,00</div><div class="foot"><span class="pct" id="sum-lucro-p">0%</span><span class="ok"></span></div></div>
+          <div class="kpi"><div class="label">Comissão</div><div class="value mono" id="sum-comiss">R$ 0,00</div><div class="foot"><span class="pct" id="sum-comiss-p">0%</span><span class="ok"></span></div></div>
+          <div class="kpi"><div class="label">Desconto</div><div class="value mono" id="sum-desc">R$ 0,00</div><div class="foot"><span class="pct" id="sum-desc-p">0%</span><span class="ok"></span></div></div>
         </div>
       </div>
     </div>

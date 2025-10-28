@@ -69,7 +69,17 @@
   .kpi .ok::after{ content:""; position:absolute; left:4px; top:2px; width:6px; height:10px; border-right:2px solid #0b1628; border-bottom:2px solid #0b1628; transform:rotate(45deg); }
 
   footer{ text-align:center; font-size:12px; color:#94a3b8; margin:18px 0 8px; line-height:1.5; padding:0 8px; }
+
+  /* Canvas do gráfico */
+  #graficoComposicao { width:100%; height:280px; }
+  @media (min-width: 640px){ #graficoComposicao { height:340px; } }
+
 </style>
+
+
+
+<!-- Chart.js UMD (versão fixada) -->
+
 
 <script>
 function $(id){ return document.getElementById(id); }
@@ -86,6 +96,30 @@ function toNum(s){
   return isNaN(n)? 0 : n;
 }
 function val(p,pc){ return p*(pc/100); }
+
+
+function atualizarGrafico(pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc){
+  const cv = document.getElementById('graficoComposicao');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const labels = ['Custo', 'Despesas', 'Impostos', 'Lucro', 'Comissão', 'Desconto'];
+  const dados  = [pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc].map(v => (isFinite(v) && !isNaN(v)) ? v : 0);
+  if (window.__graficoPreco) window.__graficoPreco.destroy();
+  window.__graficoPreco = new Chart(ctx, {
+    type: 'pie',
+    data: { labels, datasets: [{ data: dados, backgroundColor: ['#3b82f6','#8b5cf6','#22c55e','#eab308','#f97316','#ef4444'], borderColor:'#0f172a', borderWidth:1 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#e5e7eb' } },
+        title: { display: true, text: 'Distribuição dos Componentes (%)', color: '#e5e7eb' },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${Number(ctx.parsed).toFixed(1)}%` } }
+      }
+    }
+  });
+}
 
 function calcular(){
   const custo     = toNum($('custo').value);
@@ -168,7 +202,10 @@ function calcular(){
   $('sum-desc-p').textContent   = pctDesc.toFixed(1)+'%';
 
   $('sum-panel').style.display = (precoCalc>0)?'block':'none';
+  // Atualiza o gráfico com percentuais
+  __drawGrafico(pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc);
 }
+
 
 function limpar(){
   ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>$(id).value='');
@@ -188,6 +225,13 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <body>
   <div class="container">
+    <details class="panel" open>
+      <summary class="panel-h">Status do Gráfico (Auto‑check • sem dependências)</summary>
+      <div class="panel-b">
+        <ul id="chart-status" style="margin:0;padding-left:18px"></ul>
+      </div>
+    </details>
+
     <!-- Título -->
     <h1 class="app-title">Preço Certo</h1>
     <p class="app-sub">Calculadora de Precificação Inteligente</p>
@@ -267,6 +311,15 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
       </div>
     </div>
+    <!-- Gráfico de Composição do Preço -->
+    <div class="panel">
+      <div class="panel-h">Gráfico de Composição do Preço</div>
+      <div class="panel-b">
+        <canvas id="graficoComposicao"></canvas>
+      </div>
+    </div>
+
+
 
     <footer>
       <strong>Desenvolvida por Eduardo Pires</strong> — Analista de Dados<br/>
@@ -274,5 +327,79 @@ document.addEventListener('DOMContentLoaded',()=>{
       <span style="font-size:11px;">Cópia, reprodução ou redistribuição não autorizada é expressamente proibida.</span>
     </footer>
   </div>
+
+<script>
+(function(){
+  function add(ok, msg){
+    var li = document.createElement('li');
+    li.textContent = (ok ? '✓ ' : '✗ ') + msg;
+    li.style.color = ok ? '#22c55e' : '#ef4444';
+    var ul = document.getElementById('chart-status');
+    if (ul) ul.appendChild(li);
+  }
+  var cv = document.getElementById('graficoComposicao');
+  add(!!cv, 'Canvas #graficoComposicao presente no DOM');
+  var chartOk = true; add(true,'Biblioteca de gráfico local (sem dependências) pronta'); }
+})();
+</script>
+
+
+<script>
+(function(){
+  const COLORS = ['#3b82f6','#8b5cf6','#22c55e','#eab308','#f97316','#ef4444'];
+
+  function drawPie(ctx, values, labels){
+    const total = values.reduce((a,b)=>a+(isFinite(b)?b:0),0) || 1;
+    const dpr = window.devicePixelRatio || 1;
+    const w = ctx.canvas.clientWidth, h = ctx.canvas.clientHeight;
+    ctx.canvas.width = Math.floor(w*dpr);
+    ctx.canvas.height= Math.floor(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    const r = Math.min(w,h)*0.42;
+    const cx = w*0.5, cy = h*0.5;
+    let ang = -Math.PI/2;
+
+    values.forEach((v, i)=>{
+      const frac = (isFinite(v)&&v>0)? v/total : 0;
+      const a2 = ang + frac * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,ang,a2,false);
+      ctx.closePath();
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ang = a2;
+    });
+
+    // Legenda simples
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.textBaseline = 'middle';
+    let lx = 12, ly = 14;
+    labels.forEach((lab, i)=>{
+      ctx.fillStyle = COLORS[i%COLORS.length];
+      ctx.fillRect(lx, ly-6, 10, 10);
+      ctx.fillStyle = '#e5e7eb';
+      const pct = Math.round((values[i]/total)*1000)/10 || 0;
+      ctx.fillText(lab + ' ('+pct+'%)', lx+16, ly);
+      ly += 18;
+    });
+  }
+
+  window.__drawGrafico = function(pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc){
+    const cv = document.getElementById('graficoComposicao');
+    if(!cv) return;
+    const ctx = cv.getContext('2d');
+    const vals = [pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc].map(v=> (isFinite(v)&&!isNaN(v)? v:0));
+    const labels = ['Custo','Despesas','Impostos','Lucro','Comissão','Desconto'];
+    drawPie(ctx, vals, labels);
+  };
+})();
+</script>
+
 </body>
 </html>

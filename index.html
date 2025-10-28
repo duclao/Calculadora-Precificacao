@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Preço Certo — Calculadora de Markup (Revisada)</title>
+<title>Preço Certo — Calculadora de Markup (Revisada + Gráfico)</title>
 <style>
   /* Estilos originais mantidos e aprimorados para clareza */
   *, *::before, *::after { box-sizing: border-box; }
@@ -50,12 +50,11 @@
     transform: translateY(-50%);
     color: var(--muted);
     font-size: 16px;
-    pointer-events: none; /* Não interfere com o input */
+    pointer-events: none;
   }
   .input-group.custo::after { content: 'R$'; }
-  .input-group input { padding-right: 30px; } /* Espaço para o % */
-  .input-group.custo input { padding-right: 40px; } /* Espaço para o R$ */
-
+  .input-group input { padding-right: 30px; }
+  .input-group.custo input { padding-right: 40px; }
 
   .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   @media (max-width:520px){ .grid{ grid-template-columns:1fr 1fr; } }
@@ -78,8 +77,7 @@
   .impact .subtxt{ font-size:12px; color:#a1a1aa; margin-top:4px; }
   .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; }
   .neg{ color:var(--danger); font-weight:700; }
-  .pos{ color:var(--success); font-weight:700; } /* Adicionado para lucro positivo */
-
+  .pos{ color:var(--success); font-weight:700; }
 
   /* KPIs finais */
   .summary .kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:14px; }
@@ -90,194 +88,179 @@
   .kpi .pct{ font-size:12px; color:#22c55e; font-weight:700; }
   .kpi .ok{ width:16px; height:16px; flex:0 0 16px; display:inline-block; background:#22c55e; border-radius:50%; position:relative; }
   .kpi .ok::after{ content:""; position:absolute; left:4px; top:2px; width:6px; height:10px; border-right:2px solid #0b1628; border-bottom:2px solid #0b1628; transform:rotate(45deg); }
-  .kpi .alert { background: var(--danger); } /* Estilo para alerta/negativo */
+  .kpi .alert { background: var(--danger); }
   .kpi .alert::after{ background: var(--danger); border-right:2px solid #0b1628; border-bottom:2px solid #0b1628; }
+
+  /* Canvas do gráfico */
+  #graficoComposicao { width:100%; height:280px; }
+  @media (min-width: 640px){
+    #graficoComposicao { height:340px; }
+  }
 
   footer{ text-align:center; font-size:12px; color:#94a3b8; margin:18px 0 8px; line-height:1.5; padding:0 8px; }
 </style>
 
-<script>
-// Funções auxiliares
-function $(id){ return document.getElementById(id); }
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-// Função de formatação de moeda (BRL)
+<script>
+// ===== Utilitários =====
+function $(id){ return document.getElementById(id); }
 function fmt(v){
-  // Garante que v é um número finito, caso contrário retorna R$ 0,00
   if (!isFinite(v) || v === null) return 'R$ 0,00';
-  
-  // Arredonda para 2 casas decimais para evitar problemas de ponto flutuante
   const num = Math.round(v * 100) / 100;
-  
-  // Usa Intl.NumberFormat para formatação robusta
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-
-// Função de conversão de string para número (suporta formato brasileiro)
 function toNum(s){
   if (s === null || s === undefined) return 0;
-  
-  // Remove espaços e substitui vírgula por ponto para o formato decimal
   let str = String(s).trim().replace(/\s/g, '');
-  
-  // Tenta detectar se é formato brasileiro (vírgula como separador decimal)
-  // Exemplo: 1.000,50 -> 1000.50
-  // Exemplo: 1000,50 -> 1000.50
-  // Exemplo: 1000.50 -> 1000.50
-  
-  // Se houver vírgula, assume que é o separador decimal e remove pontos de milhar
-  if (str.includes(',')) {
-    str = str.replace(/\./g, '').replace(',', '.');
-  }
-  
+  if (str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
   const n = parseFloat(str);
   return isNaN(n) ? 0 : n;
 }
+function val(preco, percentual){ return preco * (percentual / 100); }
+function nz(v){ return (isFinite(v) && !isNaN(v)) ? v : 0; }
 
-// Função para calcular o valor percentual
-function val(preco, percentual){ 
-  return preco * (percentual / 100); 
+// ===== Gráfico (Chart.js) =====
+let grafico;
+function atualizarGrafico(pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc){
+  const ctx = $('graficoComposicao').getContext('2d');
+  const labels = ['Custo', 'Despesas', 'Impostos', 'Lucro', 'Comissão', 'Desconto'];
+  const dados = [pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc].map(nz);
+
+  if (grafico) grafico.destroy();
+  grafico = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: dados,
+        backgroundColor: ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#f97316', '#ef4444'],
+        borderColor: '#0f172a',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#e5e7eb' }
+        },
+        title: {
+          display: true,
+          text: 'Distribuição dos Componentes (%)',
+          color: '#e5e7eb'
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${nz(ctx.parsed).toFixed(1)}%`
+          }
+        }
+      }
+    }
+  });
 }
 
-// Função principal de cálculo
+// ===== Cálculo principal =====
 function calcular(){
-  // 1. Coleta e sanitização dos inputs
   const custo     = toNum($('custo').value);
   const despesas  = toNum($('despesas').value);
-  const lucro     = toNum($('lucro').value); // Lucro desejado
+  const lucro     = toNum($('lucro').value);
   const impostos  = toNum($('aliquota').value);
   const comissao  = toNum($('comissao').value);
   const desconto  = toNum($('desconto').value);
   const preservar = $('preservar').checked;
 
-  // 2. Validação da soma do Markup
   const somaMarkup = despesas + lucro + impostos + comissao;
-  if(somaMarkup >= 100){ 
-    alert('A soma de Despesas, Impostos, Lucro e Comissão não pode ser igual ou superior a 100%. Por favor, ajuste os valores.'); 
-    // Limpa a exibição e retorna
+  if(somaMarkup >= 100){
+    alert('A soma de Despesas, Impostos, Lucro e Comissão não pode ser igual ou superior a 100%. Por favor, ajuste os valores.');
     limparResultados();
-    return; 
+    return;
   }
-  
-  // 3. Cálculo do Markup e Preço Base
+
   const fatorMarkup = 100 / (100 - somaMarkup);
   const precoBase = custo * fatorMarkup;
-  
-  let precoCalc = precoBase; // Preço sem desconto
-  let precoFinal;            // Preço com desconto
 
-  // 4. Aplicação do Desconto
+  let precoCalc = precoBase;
+  let precoFinal;
+
   if(preservar){
-    // Opção "Preservar Margem": o desconto é aplicado sobre o Markup (fatorMarkup)
-    // O preço final é o preço base (sem desconto)
-    precoFinal = precoBase;
-    
-    // O preço calculado (que será exibido como "Preço Sugerido") é ajustado para absorver o desconto
-    // PrecoCalc * (1 - desconto/100) = PrecoFinal
-    const fatorDesconto = 1 - (desconto / 100);
-    precoCalc = (fatorDesconto > 0) ? (precoFinal / fatorDesconto) : precoFinal;
-    
-    // NOTA: Na lógica original, o "precoSemDescBase" era o precoFinal. 
-    // Mantenho a lógica de que precoFinal é o preço que o cliente paga, e precoCalc é o preço de tabela.
-    // Se preservar, o precoFinal (o que o cliente paga) deve ser o Preço Base (sem desconto)
-    // E o PrecoCalc (Preço Sugerido) deve ser o preço de tabela que, após o desconto, resulta no Preço Base.
-    // A lógica original (linhas 107-110) estava um pouco confusa, mas o resultado final é o mesmo:
-    // precoFinal = precoSemDescBase;
-    // precoCalc = precoFinal / (1 - (desconto/100));
-    // A única diferença é que, se preservar, o Preço Final (o que o cliente paga) é o Preço Base.
-    // Vou manter a estrutura da lógica original, mas com nomes mais claros.
-    
-    // Revertendo para a lógica original para manter a compatibilidade, mas com nomes claros:
-    // precoBase é o preço que garante a margem.
-    // Se preservar, o Preço Final (o que o cliente paga) é o precoBase.
-    // O Preço Sugerido (precoCalc) é o preço de tabela que, com o desconto, chega ao precoBase.
     precoFinal = precoBase;
     const fatorDescontoInv = 1 / (1 - (desconto / 100));
     precoCalc = (desconto > 0) ? (precoBase * fatorDescontoInv) : precoBase;
-    
   } else {
-    // Opção padrão: o desconto é aplicado sobre o preço calculado
     precoCalc = precoBase;
     precoFinal = precoCalc * (1 - desconto / 100);
   }
-  
-  // 5. Cálculo dos Componentes (sem desconto) - Base para KPIs
-  // Usamos precoBase/precoCalc (o preço de tabela) para calcular os componentes percentuais
+
+  // Se preservar e sem desconto, precoFinal não foi setado acima; garantir definição
+  if (preservar && (desconto <= 0)) precoFinal = precoBase;
+
+  // Componentes base (usam precoCalc)
   const dBase      = val(precoCalc, despesas);
   const iBase      = val(precoCalc, impostos);
   const cBase      = val(precoCalc, comissao);
-  const lBase      = val(precoCalc, lucro); // Lucro sobre venda (desejado)
-  const lucroRealBase = precoCalc - custo - dBase - iBase - cBase; // Lucro residual (real)
+  const lBase      = val(precoCalc, lucro);
+  const lucroRealBase = precoCalc - custo - dBase - iBase - cBase;
 
-  // 6. Cálculo dos Componentes Finais (com desconto)
-  // Usamos precoFinal (o preço que o cliente paga)
+  // Componentes finais (usam precoFinal)
   const dFinal = val(precoFinal, despesas);
   const iFinal = val(precoFinal, impostos);
   const cFinal = val(precoFinal, comissao);
-  const lucroRealFinal = precoFinal - custo - dFinal - iFinal - cFinal; // Lucro residual (real)
+  const lucroRealFinal = precoFinal - custo - dFinal - iFinal - cFinal;
 
-  // 7. Resultados de Impacto
   const reducaoLucro = Math.max(0, lucroRealBase - lucroRealFinal);
-  
-  // 8. Atualização da Interface
-  
+
   // HERO
   $('p-sug').textContent = fmt(precoCalc);
   const wrap = $('p-desc-wrap');
-  if((desconto||0)>0){ 
-    wrap.style.display='block'; 
-    $('p-desc').textContent = fmt(precoFinal); 
-  } else { 
-    wrap.style.display='none'; 
+  if((desconto||0)>0){
+    wrap.style.display='block';
+    $('p-desc').textContent = fmt(precoFinal);
+  } else {
+    wrap.style.display='none';
   }
-  
-  // IMPACTO
+
+  // Impacto
   $('preco-sem').textContent   = fmt(precoCalc);
   $('preco-com').textContent   = fmt(precoFinal);
-  
-  // Lucro sobre venda
   $('lucro-sv-sem').textContent= fmt(lBase);
-  $('lucro-sv-com').textContent= fmt(val(precoFinal, lucro)); // Lucro sobre venda (desejado) no preço final
-  
-  // Lucro Real (Residual)
+  $('lucro-sv-com').textContent= fmt(val(precoFinal, lucro));
   $('lucro-real-sem').textContent = fmt(lucroRealBase);
   $('lucro-real-com').textContent = fmt(lucroRealFinal);
-  
-  // Redução do Lucro
   $('lucro-reducao').textContent  = fmt(reducaoLucro);
-  
-  // 9. Atualização dos KPIs Finais (Análise do Preço Sugerido)
+
+  // KPIs
   const pc = precoCalc || 0.000001;
-  
-  // Valores (R$)
   $('sum-custo').textContent  = fmt(custo);
   $('sum-desp').textContent   = fmt(dBase);
   $('sum-imp').textContent    = fmt(iBase);
-  $('sum-lucro').textContent  = fmt(lBase); // Lucro sobre venda (desejado)
+  $('sum-lucro').textContent  = fmt(lBase);
   $('sum-comiss').textContent = fmt(cBase);
   const descVal = precoCalc * (desconto/100);
   $('sum-desc').textContent   = fmt(descVal);
 
-  // Percentuais (%)
   const pctCusto  = (custo/pc)*100;
   const pctDesp   = (dBase/pc)*100;
   const pctImp    = (iBase/pc)*100;
-  const pctLucro  = lucro; // É o percentual desejado
+  const pctLucro  = lucro;
   const pctComiss = comissao;
   const pctDesc   = desconto;
-  
+
   $('sum-custo-p').textContent  = pctCusto.toFixed(1)+'%';
   $('sum-desp-p').textContent   = pctDesp.toFixed(1)+'%';
   $('sum-imp-p').textContent    = pctImp.toFixed(1)+'%';
   $('sum-lucro-p').textContent  = pctLucro.toFixed(1)+'%';
   $('sum-comiss-p').textContent = pctComiss.toFixed(1)+'%';
   $('sum-desc-p').textContent   = pctDesc.toFixed(1)+'%';
-  
-  // Adiciona lógica de status para o KPI de Lucro Real
+
   const kpiLucroReal = $('kpi-lucro-real');
   const lucroRealPct = (lucroRealBase / pc) * 100;
   $('sum-lucro-real').textContent = fmt(lucroRealBase);
   $('sum-lucro-real-p').textContent = lucroRealPct.toFixed(1)+'%';
-  
   const statusIcon = kpiLucroReal.querySelector('.status-icon');
   if (lucroRealBase > 0) {
     statusIcon.classList.remove('alert');
@@ -287,24 +270,20 @@ function calcular(){
     statusIcon.classList.add('alert');
   }
 
-  // Exibe o painel de resumo
   $('sum-panel').style.display = (precoCalc>0)?'block':'none';
+
+  // Atualiza o gráfico com percentuais calculados
+  atualizarGrafico(pctCusto, pctDesp, pctImp, pctLucro, pctComiss, pctDesc);
 }
 
-// Limpa os campos de input
 function limpar(){
   ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>$(id).value='');
   $('preservar').checked=false;
   calcular();
 }
-
-// Limpa os resultados (usado em caso de erro)
 function limparResultados() {
-  // HERO
   $('p-sug').textContent = 'R$ 0,00';
   $('p-desc-wrap').style.display='none';
-  
-  // IMPACTO
   $('preco-sem').textContent   = 'R$ 0,00';
   $('preco-com').textContent   = 'R$ 0,00';
   $('lucro-sv-sem').textContent= 'R$ 0,00';
@@ -312,38 +291,28 @@ function limparResultados() {
   $('lucro-real-sem').textContent = 'R$ 0,00';
   $('lucro-real-com').textContent = 'R$ 0,00';
   $('lucro-reducao').textContent  = 'R$ 0,00';
-  
-  // KPIs
   $('sum-panel').style.display = 'none';
+  // Zera o gráfico
+  atualizarGrafico(0,0,0,0,0,0);
 }
 
 // Inicialização
 document.addEventListener('DOMContentLoaded',()=>{
-  // Adiciona event listeners para 'input' em todos os campos relevantes
   ['custo','despesas','lucro','aliquota','comissao','desconto'].forEach(id=>{
     const input = $(id);
     input.addEventListener('input', calcular);
-    // Adiciona evento para formatar o valor ao perder o foco (melhor UX)
     input.addEventListener('blur', (e) => {
         const num = toNum(e.target.value);
         e.target.value = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     });
-    // Adiciona evento para remover a formatação ao ganhar o foco
     input.addEventListener('focus', (e) => {
         const num = toNum(e.target.value);
         e.target.value = num === 0 ? '' : num.toFixed(2).replace('.', ',');
     });
   });
-  
   $('preservar').addEventListener('change',calcular);
-  
-  // Remove listeners dos botões 'calc' e 'clear' se o cálculo for automático
-  // Se o cálculo for automático, os botões 'calc' e 'clear' não precisam de um listener 'click' para 'calcular'
-  // Mas o botão 'clear' precisa do listener 'limpar'
   $('clear').addEventListener('click',limpar);
-  
-  // Executa o cálculo inicial para preencher os valores
-  calcular();
+  calcular(); // render inicial (inclui gráfico)
 });
 </script>
 </head>
@@ -427,6 +396,14 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div class="kpi"><div class="label">Comissão</div><div class="value mono" id="sum-comiss">R$ 0,00</div><div class="foot"><span class="pct" id="sum-comiss-p">0%</span><span class="ok status-icon"></span></div></div>
           <div class="kpi"><div class="label">Desconto Aplicado</div><div class="value mono" id="sum-desc">R$ 0,00</div><div class="foot"><span class="pct" id="sum-desc-p">0%</span><span class="ok status-icon"></span></div></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de Composição -->
+    <div class="panel">
+      <div class="panel-h">Gráfico de Composição do Preço</div>
+      <div class="panel-b">
+        <canvas id="graficoComposicao"></canvas>
       </div>
     </div>
 

@@ -87,6 +87,16 @@ function fmt(v){
   try{ return isFinite(v) ? Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : 'R$ 0,00'; }
   catch(e){ return 'R$ ' + (Math.round((+v||0)*100)/100).toFixed(2).replace('.',','); }
 }
+
+function fmtBRNum(n, dec=2){
+  if(!isFinite(n)) n = 0;
+  try{
+    return Number(n).toLocaleString('pt-BR', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+  }catch(e){
+    return (Math.round((+n||0)*10**dec)/10**dec).toFixed(dec).replace('.',',');
+  }
+}
+
 function toNum(s){
   s = String(s==null? '': s).replace(/\s+/g,'').replace(/[^0-9,\.\-]/g,'');
   const parts = s.split(/[.,]/);
@@ -134,6 +144,8 @@ function calcular(){
   if(soma >= 100){ alert('A soma de despesas + impostos + lucro + comissão não pode ser ≥ 100%.'); return; }
 
   const mult = 100 / (100 - soma || 1);
+  // Atualiza Fator Markup
+  try{ document.getElementById('fator-val').textContent = '× ' + fmtBRNum(mult, 3); }catch(e){}
   const precoSemDescBase = custo * mult;
   let precoCalc, precoFinal;
 
@@ -262,6 +274,20 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
       </div>
     </div>
+
+
+    <!-- Fator Markup -->
+    <div class="panel">
+      <div class="panel-h">Fator Markup</div>
+      <div class="panel-b">
+        <div class="hero" style="padding:12px 14px;">
+          <div class="title">Fator aplicado</div>
+          <div id="fator-val" class="price">× 1,00</div>
+          <div class="sub">Fórmula: <span class="mono">100 ÷ (100 − (Despesas + Impostos + Comissão + Lucro))</span></div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- Impacto do Desconto -->
     <div class="panel impact">
